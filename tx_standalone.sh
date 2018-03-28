@@ -1,11 +1,12 @@
 #!/bin/bash
 
-WLAN=$1
+#WLAN=$1
+WLAN=wlx502b73e83bf2
 
 #BAND="5G"
 BAND="2G"
 
-CHANNEL2G="6"
+CHANNEL2G="8"
 CHANNEL5G="149"
 
 ifconfig $WLAN down
@@ -30,4 +31,4 @@ case $BAND in
       ;;
 esac
 
-./tx $WLAN
+./fpv_tx $WLAN
