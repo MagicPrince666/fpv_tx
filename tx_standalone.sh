@@ -6,7 +6,7 @@ WLAN=wlx502b73e83bf2
 #BAND="5G"
 BAND="2G"
 
-CHANNEL2G="8"
+CHANNEL2G="13"
 CHANNEL5G="149"
 
 ifconfig $WLAN down

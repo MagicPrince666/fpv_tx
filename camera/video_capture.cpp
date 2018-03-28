@@ -23,7 +23,7 @@
 
 #define FIFO_NAME "/tmp/fifo0"
 
-const char *h264_file_name = FIFO_NAME;
+const char *h264_file_name = "test.264";
 
 FILE *h264_fp = NULL;
 //int h264_fp = -1;
@@ -79,12 +79,6 @@ void close_camera(struct camera *cam) {
 }
 
 void init_file() {
-	// while(h264_fp <= 0)
-	// {
-	// 	usleep(100);
-	// 	if(-1 == access(h264_file_name,0))continue;//检查管道文件是否存在
-	// 	h264_fp = open(h264_file_name, O_WRONLY | O_NONBLOCK, 0);	
-	// }
 	h264_fp = fopen(h264_file_name, "w");
 	printf("open %s\n",h264_file_name);
 }
@@ -305,7 +299,7 @@ void v4l2_init(struct camera *cam) {
 	init_camera(cam);
 	start_capturing(cam);
 	init_encoder(cam);
-	init_file();
+	//init_file();
 }
 
 void v4l2_close(struct camera *cam) {
@@ -313,6 +307,6 @@ void v4l2_close(struct camera *cam) {
 	uninit_camera(cam);
 	close_camera(cam);
 	free(cam);
-	close_file();
+	//close_file();
 	close_encoder();
 }
