@@ -435,15 +435,15 @@ int main(int argc, char *argv[])
 
 	printf("create thread\n");
 
-	#ifdef H264_soft
+#ifdef H264_soft
  	if(pthread_create(&thread[0], NULL, video_Capture_Thread, NULL) != 0)   
         printf("video_Capture_Thread create fail!\n");
     if(pthread_create(&thread[1], NULL, video_Encode_Thread, NULL) != 0)  
         printf("video_Encode_Thread create fail!\n");
-	#else
+#else
 	if(pthread_create(&thread[0], NULL, Cap_H264_Video, NULL) != 0)   
         printf("Cap_H264_Video create fail!\n");
-	#endif
+#endif
 
 	if(pthread_create(&thread[2], NULL, Transfer_Encode_Thread, NULL) != 0)   
     	printf("Transfer_Encode_Thread create fail!\n");
@@ -454,11 +454,11 @@ int main(int argc, char *argv[])
 		pthread_join(thread[0],NULL);
 	}
 
-	#ifdef H264_soft
+#ifdef H264_soft
 	if(thread[1] !=0) {   
 		pthread_join(thread[1],NULL);
 	}
-	#endif
+#endif
 
 	if(thread[2] !=0) {   
 		pthread_join(thread[2],NULL);
