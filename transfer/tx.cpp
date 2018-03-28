@@ -43,6 +43,12 @@
 bool start = false;
 RingBuffer *rbuf;
 
+typedef struct {
+	int seq_nr;
+	int fd;
+	int curr_pb;
+	packet_buffer_t *pbl;
+} fifo_t;
 
 /* this is the template radiotap header we send packets out with */
 
@@ -142,7 +148,19 @@ int packet_header_init(uint8_t *packet_header) {
 			return pu8 - packet_header;
 }
 
+void fifo_init(fifo_t *fifo, int fifo_count, int block_size) {
+		int j;
 
+		fifo->seq_nr = 0;
+		fifo->fd = -1;
+		fifo->curr_pb = 0;
+		fifo->pbl = lib_alloc_packet_buffer_list(block_size, MAX_PACKET_LENGTH);
+
+		//prepare the buffers with headers
+		for(j=0; j<block_size; ++j) {
+			fifo->pbl[j].len = 0;
+		}
+}
 
 void pb_transmit_packet(pcap_t *ppcap, int seq_nr, uint8_t *packet_transmit_buffer, int packet_header_len, const uint8_t *packet_data, int packet_length) {
     //add header outside of FEC
@@ -238,10 +256,13 @@ void *Transfer_Encode_Thread(void *arg)
 	time_t start_time;
     uint8_t packet_transmit_buffer[MAX_PACKET_LENGTH];
 	size_t packet_header_length = 0;
+	fifo_t fifo;
 
 	printf("Raw data transmitter (c) 2015 befinitiv  GPL2\n");
 
     packet_header_length = packet_header_init(packet_transmit_buffer);
+	fifo_init(&fifo, param_fifo_count, param_data_packets_per_block);
+	
 
 	//initialize forward error correction
 	fec_init();
@@ -253,12 +274,32 @@ void *Transfer_Encode_Thread(void *arg)
 	start = true;
 	//printf("start capture\n");
 	
-	packet_buffer_t *pb = lib_alloc_packet_buffer_list(param_data_packets_per_block, MAX_PACKET_LENGTH);
 
 	for(;;)
 	{
-		pb->len += RingBuffer_read(rbuf,pb->data,1024);
+		packet_buffer_t *pb = fifo.pbl + fifo.curr_pb;
+
+		//if the buffer is fresh we add a payload header
+		if(pb->len == 0) {
+            pb->len += sizeof(payload_header_t); //make space for a length field (will be filled later)
+		}
+
+		int inl = RingBuffer_read(rbuf,pb->data + pb->len,param_packet_length - pb->len);
 		
+		if(inl < 0 || inl > param_packet_length-pb->len){
+			perror("reading stdin");
+			return NULL;
+		}
+
+		if(inl == 0) {
+			//EOF
+			//fprintf(stderr, "Warning: Lost connection to fifo. Please make sure that a data source is connected\n");
+			usleep(1e5);
+			continue;
+		}
+
+		pb->len += inl;
+
 		//check if this packet is finished
 		if(pb->len >= param_min_packet_length) {
 			payload_header_t *ph = (payload_header_t*)pb->data;
@@ -266,8 +307,14 @@ void *Transfer_Encode_Thread(void *arg)
 			pcnt++;
 
 			//check if this block is finished
-			pb_transmit_block(pb, ppcap, &seq_nr, param_port, param_packet_length, packet_transmit_buffer, packet_header_length, param_data_packets_per_block, param_fec_packets_per_block, param_transmission_count);
-
+			//pb_transmit_block(fifo.pbl, ppcap, &seq_nr, param_port, param_packet_length, packet_transmit_buffer, packet_header_length, param_data_packets_per_block, param_fec_packets_per_block, param_transmission_count);
+			if(fifo.curr_pb == param_data_packets_per_block-1) {
+				pb_transmit_block(fifo.pbl, ppcap, &(fifo.seq_nr), param_port, param_packet_length, packet_transmit_buffer, packet_header_length, param_data_packets_per_block, param_fec_packets_per_block, param_transmission_count);
+				fifo.curr_pb = 0;
+			}
+			else {
+				fifo.curr_pb++;
+			}
 		}
 
 		if(pcnt % 128 == 0) {
