@@ -283,7 +283,7 @@ int start_previewing(void)
 	return 0;
 }
 
-int capturing = 1;
+extern bool start;
 
 void Init_264camera(void)
 {
@@ -374,7 +374,7 @@ void * Cap_H264_Video (void *arg)
 	fd_set rfds;
     int retval=0;
 
-	while(capturing)
+	while(start)
 	{
 		CLEAR (buf);
 			
