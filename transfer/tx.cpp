@@ -29,9 +29,17 @@
 #include "lib.h"
 #include "wifibroadcast.h"
 
+
+#include "ringbuffer.h"
+
+#define H264_soft 0 //选择软件/硬件压缩H264
+
+#ifdef H264_soft
 #include "h264_camera.h"
 #include "video_capture.h"
-#include "ringbuffer.h"
+#else
+#include "H164_UVC_TestAP.h"
+#endif
 
 #define MAX_PACKET_LENGTH 4192
 #define MAX_USER_PACKET_LENGTH 1450
@@ -426,21 +434,32 @@ int main(int argc, char *argv[])
 	rbuf = RingBuffer_create(DEFAULT_BUF_SIZE);
 
 	printf("create thread\n");
-	
+
+	#ifdef H264_soft
  	if(pthread_create(&thread[0], NULL, video_Capture_Thread, NULL) != 0)   
         printf("video_Capture_Thread create fail!\n");
     if(pthread_create(&thread[1], NULL, video_Encode_Thread, NULL) != 0)  
         printf("video_Encode_Thread create fail!\n");
+	#else
+	if(pthread_create(&thread[0], NULL, Cap_H264_Video, NULL) != 0)   
+        printf("Cap_H264_Video create fail!\n");
+	#endif
+
 	if(pthread_create(&thread[2], NULL, Transfer_Encode_Thread, NULL) != 0)   
     	printf("Transfer_Encode_Thread create fail!\n");
 	
 
+
 	if(thread[0] !=0) {  
 		pthread_join(thread[0],NULL);
 	}
+
+	#ifdef H264_soft
 	if(thread[1] !=0) {   
 		pthread_join(thread[1],NULL);
 	}
+	#endif
+
 	if(thread[2] !=0) {   
 		pthread_join(thread[2],NULL);
 	}
