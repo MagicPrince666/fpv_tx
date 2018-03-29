@@ -6,7 +6,7 @@
 extern int capturing;
 extern FILE *rec_fp1;
 void Init_264camera(void);
-void * cap_video (void *arg);
+void * Cap_H264_Video (void *arg);
 int read_buf(void * opaque,uint8_t *buf, int buf_size);
 
 #endif
